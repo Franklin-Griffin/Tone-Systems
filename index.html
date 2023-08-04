@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equal Temperment Tone Systems</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select {
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .noteButton {
+            padding: 5px 10px;
+            margin: 2px;
+            font-size: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .c {
+            background-color: #dc3545;
+        }
+
+        .noteButton:hover {
+            background-color: #0056b3;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+            margin: 20px auto;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .slider-label {
+            flex: 1;
+            text-align: center;
+        }
+
+        .slider {
+            width: 100%;
+        }
+
+        .slider-labels .slider-label:first-child {
+            text-align: left;
+            padding-left: 5px;
+        }
+
+        .slider-labels .slider-label:last-child {
+            text-align: right;
+            padding-right: 5px;
+        }
+    </style>
+    </head>
+    <body>
+
+    <h1>Equal Temperment Tone Systems</h1>
+
+    <label for="waveformSelect">Select Waveform:</label>
+    <select id="waveformSelect">
+        <option value="sine">Sine</option>
+        <option value="square">Square</option>
+        <option value="triangle">Triangle</option>
+        <option value="sawtooth">Sawtooth</option>
+    </select>
+    <div class="slider-container">
+      <label for="toneSlider">Tones:</label>
+      <input class="slider" type="range" id="toneSlider" min="1" max="20" step="1" value="1">
+      <div class="slider-labels">
+        <span class="slider-label">1</span>
+        <span class="slider-label">20</span>
+      </div>
+    </div>
+  
+    <div class="slider-container">
+      <label for="speedSlider">Time per Note:</label>
+      <input class="slider" type="range" id="speedSlider" min="0.05" max="1" step="0.01" value="0.5">
+      <div class="slider-labels">
+        <span class="slider-label">0.05</span>
+        <span class="slider-label">1</span>
+      </div>
+    </div>
+  
+    <div class="slider-container">
+      <label for="octaveSlider">Octaves:</label>
+      <input class="slider" type="range" id="octaveSlider" min="0" max="2" step="0.01" value="1">
+      <div class="slider-labels">
+        <span class="slider-label">0</span>
+        <span class="slider-label">2</span>
+      </div>
+    </div>
+
+    <button id="play">Play Scale</button>
+
+    <div id="noteButtons">
+        <button class="noteButton c" data-note="0" title="Frequency: 261.63">C</button>
+        <button class="noteButton c" data-note="1" title="Frequency: 523.26">C</button>
+    </div>
+
+    <script>
+        const waveformSelect = document.getElementById("waveformSelect");
+        const toneSlider = document.getElementById("toneSlider");
+        const speedSlider = document.getElementById("speedSlider");
+        const octaveSlider = document.getElementById("octaveSlider");
+        const noteButtonsContainer = document.getElementById("noteButtons");
+        document.querySelectorAll(".noteButton").forEach(button => {
+            button.addEventListener("click", () => {
+                const note = button.getAttribute("data-note");
+                playNote(note);
+            });
+        });
+        document.getElementById("play").addEventListener("click", function () {
+            const tones = parseInt(toneSlider.value);
+            const octaves = parseFloat(octaveSlider.value);
+            for (let i = 0; i <= tones * octaves; i++) {
+                setTimeout(() => {
+                    playNote(i);
+                }, i * speedSlider.value * 1000);
+            }
+        });
+        
+        toneSlider.addEventListener("change", recalculateKeys);
+        octaveSlider.addEventListener("change", recalculateKeys);
+
+        function recalculateKeys() {
+            const tones = parseInt(toneSlider.value);
+            const octaves = parseFloat(octaveSlider.value);
+            noteButtonsContainer.innerHTML = ""; // Clear previous buttons
+
+            for (let i = 0; i <= tones * octaves; i++) {
+                const button = document.createElement("button");
+                button.classList.add("noteButton");
+                button.setAttribute("data-note", i);
+                button.textContent = "?";
+                button.title = "Frequency: " + calculateFrequency(i);
+                if (i % tones === 0) {
+                    button.textContent = "C";
+                    button.classList.add("c");
+                }
+                noteButtonsContainer.appendChild(button);
+            }
+
+            document.querySelectorAll(".noteButton").forEach(button => {
+                button.addEventListener("click", () => {
+                    const note = button.getAttribute("data-note");
+                    playNote(note);
+                });
+            });
+        }
+
+        function playNote(note) {
+            const audioContext = new(window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = waveformSelect.value;
+            oscillator.frequency.setValueAtTime(calculateFrequency(note), audioContext.currentTime);
+
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + speedSlider.value);
+        }
+
+        function calculateFrequency(note) {
+            let referenceFrequency = 261.63; // Middle C
+            return referenceFrequency * Math.pow(2, 1 / toneSlider.value) ** parseInt(note);
+        }7
+    </script>
+    </body>
+</html>
