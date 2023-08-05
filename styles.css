@@ -44,12 +44,16 @@ button {
     border-radius: 4px;
 }
 
+.noteButton:hover {
+    background-color: #0056b3;
+}
+
 .c {
     background-color: #dc3545;
 }
 
-.noteButton:hover {
-    background-color: #0056b3;
+.c:hover {
+    background-color: #b32e3e;
 }
 
 .slider-container {
